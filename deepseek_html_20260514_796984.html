@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Памятник Георгию Буркову | Пермь</title>
+    <!-- Fonts & Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Swiper slider CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <!-- Leaflet CSS (карта) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1117;
+            color: #edf2f7;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* custom scroll */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1f2c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #b96f0f;
+            border-radius: 6px;
+        }
+
+        /* Анимации */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slowZoom {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+
+        @keyframes gentlePulse {
+            0% { text-shadow: 0 0 0px rgba(185, 111, 15, 0.2);}
+            100% { text-shadow: 0 0 12px rgba(185, 111, 15, 0.6);}
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.1), transform 0.8s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero секция */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            background: linear-gradient(125deg, #100f17 0%, #241d1a 100%);
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.28;
+            filter: grayscale(0.45) brightness(0.5);
+            z-index: 0;
+            animation: slowZoom 22s infinite alternate ease-in-out;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 960px;
+            padding: 2rem;
+            backdrop-filter: blur(2.5px);
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 8vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #f9e0a0, #da8617);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+            animation: gentlePulse 2.5s infinite alternate;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #dddddd;
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: 400;
+        }
+
+        .btn-scroll {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: rgba(185, 111, 15, 0.9);
+            color: #0f0f14;
+            padding: 0.9rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: 1px solid rgba(250, 200, 80, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-scroll:hover {
+            background: #e59320;
+            transform: translateY(-5px);
+            box-shadow: 0 18px 28px -10px rgba(0,0,0,0.5);
+            gap: 1rem;
+        }
+
+        /* общие секции */
+        .section {
+            padding: 5rem 1.5rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+            background: linear-gradient(120deg, #f3e0b0, #dc8c1a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .title-deco {
+            width: 80px;
+            height: 4px;
+            background: #dc8c1a;
+            margin: 0.5rem 0 2rem 0;
+            border-radius: 2px;
+        }
+
+        /* карточки */
+        .desc-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: space-between;
+        }
+
+        .desc-card {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(25, 28, 40, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 1.8rem;
+            padding: 2rem;
+            border: 1px solid rgba(220, 140, 26, 0.3);
+            transition: all 0.4s;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .desc-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(220, 140, 26, 0.9);
+            box-shadow: 0 25px 45px rgba(0,0,0,0.35);
+            background: rgba(30, 34, 52, 0.85);
+        }
+
+        .desc-card i {
+            font-size: 2.4rem;
+            color: #e59320;
+            margin-bottom: 1rem;
+        }
+
+        .desc-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .desc-card p {
+            color: #cfdef5;
+        }
+
+        /* блок истории */
+        .history-text {
+            background: linear-gradient(145deg, #141823, #0a0c15);
+            padding: 2rem;
+            border-radius: 2rem;
+            margin-top: 1.2rem;
+            border-left: 5px solid #dc8c1a;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            transition: all 0.2s;
+        }
+
+        /* Слайдер */
+        .gallery-container {
+            margin: 3rem 0;
+            border-radius: 2rem;
+            overflow: hidden;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+        }
+
+        .swiper {
+            width: 100%;
+            height: auto;
+            border-radius: 1.5rem;
+        }
+
+        .swiper-slide {
+            text-align: center;
+            background: #1a1d2c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .swiper-slide img {
+            width: 100%;
+            height: 540px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.4s;
+        }
+
+        .slide-caption {
+            background: rgba(0,0,0,0.7);
+            padding: 0.85rem;
+            width: 100%;
+            color: #ffdfaa;
+            font-weight: 500;
+            backdrop-filter: blur(5px);
+        }
+
+        .swiper-button-next, .swiper-button-prev {
+            color: #e59320;
+            background: rgba(0,0,0,0.5);
+            padding: 1rem;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+        }
+
+        .swiper-pagination-bullet-active {
+            background: #e59320 !important;
+        }
+
+        /* карта */
+        .map-wrapper {
+            border-radius: 1.8rem;
+            overflow: hidden;
+            border: 2px solid #3a2e22;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.35);
+            height: 400px;
+            margin-top: 2rem;
+        }
+        #monument-map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .footer {
+            background: #05060a;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+            border-top: 1px solid #3a2e22;
+            font-size: 0.9rem;
+            color: #9aa2b5;
+        }
+
+        .go-top {
+            position: fixed;
+            bottom: 30px;
+            right: 25px;
+            background: #b96f0f;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.7rem;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 99;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .go-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .go-top:hover {
+            background: #dc8c1a;
+            transform: translateY(-3px);
+        }
+
+        @media (max-width: 768px) {
+            .section {
+                padding: 3rem 1rem;
+            }
+            .section-title {
+                font-size: 2rem;
+            }
+            .swiper-slide img {
+                height: 320px;
+            }
+            .desc-card {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero c динамичным фоном -->
+<section class="hero">
+    <img class="hero-bg" src="https://images.pexels.com/photos/257007/pexels-photo-257007.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="Театральный фон Пермь" onerror="this.src='https://placehold.co/1600x900/2f2a24/e2b13b?text=Георгий+Бурков'">
+    <div class="hero-content">
+        <h1>Георгий Бурков <br> «Чудак из Перми»</h1>
+        <p>Единственный в России памятник великому актёру, народному любимцу, уроженцу Перми. Место памяти, добра и искренности.</p>
+        <a href="#about" class="btn-scroll" id="scrollBtn">
+            <span>Открыть историю</span>
+            <i class="fas fa-arrow-down"></i>
+        </a>
+    </div>
+    <div style="position: absolute; bottom: 18px; left: 0; width:100%; text-align:center; font-size:0.8rem; opacity:0.7;">
+        <i class="fas fa-map-marker-alt"></i> г. Пермь, ул. Революции, парк ЖК «Гулливер»
+    </div>
+</section>
+
+<main>
+    <!-- Раздел описания памятника -->
+    <section id="about" class="section">
+        <div class="animate-on-scroll">
+            <span class="section-title">Памятник Личности</span>
+            <div class="title-deco"></div>
+        </div>
+        <div class="desc-grid">
+            <div class="desc-card animate-on-scroll">
+                <i class="fas fa-sculpture"></i>
+                <h3>Автор и воплощение</h3>
+                <p>Скульптор Алексей Залазаев изобразил Георгия Буркова сидящим с книгой в руке, размером в полторы натуры. Небрежность позы подчёркивает простоту, открытость и «народность» актёра.</p>
+            </div>
+            <div class="desc-card animate-on-scroll">
+                <i class="fas fa-calendar-alt"></i>
+                <h3>Открытие</h3>
+                <p>Торжественно открыт 8 июня 2018 года к 85-летию Буркова и 295-летию Перми. Это единственный в России монумент советскому актёру Георгию Буркову.</p>
+            </div>
+            <div class="desc-card animate-on-scroll">
+                <i class="fas fa-film"></i>
+                <h3>Символизм</h3>
+                <p>Фигура из классической бронзы на тёмно-сером постаменте — гражданский памятник Человеку, а не просто артисту. Книга в руке — любовь к литературе и размышлениям.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- История Георгия Буркова и памятника -->
+    <section class="section">
+        <div class="animate-on-scroll">
+            <span class="section-title">Жизнь и судьба</span>
+            <div class="title-deco"></div>
+        </div>
+        <div class="history-text animate-on-scroll">
+            <p><strong>Георгий Иванович Бурков</strong> родился 31 мая 1933 года в Перми. Окончил школу №49, учился на юридическом факультете Пермского университета, но тяга к сцене победила. Начал артистический путь в театре Березников, затем работал в Пермском театре драмы. В 1965 году переехал в Москву, служил в «Современнике», МХАТе, театре им. Пушкина. Снимался в кино с 1967 года, оставил яркий след в десятках фильмов: «Печки-лавочки», «Калина красная», «Они сражались за Родину», «Ирония судьбы», «Гараж», «Жестокий романс» и многих других. Заслуженный артист РСФСР (1980).</p>
+            <br>
+            <p>Идея установки памятника на родине принадлежит компании «КОРТРОС-Пермь». Был проведён творческий конкурс, победу одержал проект Алексея Залазаева. 8 июня 2018 года монумент был торжественно открыт в парке строящегося жилого комплекса «Гулливер» по ул. Революции. В церемонии участвовали губернатор Пермского края Максим Решетников, Виктор Вексельберг, глава Перми Дмитрий Самойлов, а также народная артистка Валентина Талызина — друг и партнёр Буркова по съёмочной площадке.</p>
+            <br>
+            <p>«Он играл, как жил, играл людей, с которыми встречался в жизни. В каждой роли всегда можно найти что-то пермское, родное», — сказал на открытии Максим Решетников. Сегодня памятник стал визитной карточкой Перми, местом притяжения поклонников и горожан, напоминанием о том, что истинный талант и человечность живут в веках.</p>
+        </div>
+    </section>
+
+    <!-- Галерея в виде слайдера -->
+    <section class="section">
+        <div class="animate-on-scroll">
+            <span class="section-title">Фотогалерея</span>
+            <div class="title-deco"></div>
+            <p style="margin-bottom: 1rem;">Образ памятника, торжественное открытие и кадры, передающие атмосферу</p>
+        </div>
+        <div class="gallery-container animate-on-scroll">
+            <div class="swiper mySwiper">
+                <div class="swiper-wrapper">
+                    <!-- 6 изображений с качественными видами памятника -->
+                    <div class="swiper-slide">
+                        <img src="https://gorodperm.ru/upload/medialibrary/f0e/f0ebdb77a84270ab493cc88110482cae.jpg" alt="Общий вид памятника" onerror="this.src='https://placehold.co/1200x800/2d2f48/e2b13b?text=Памятник+Георгию+Буркову'">
+                        <div class="slide-caption">📖 Бронзовый Бурков с книгой — символ мудрости и простоты</div>
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="https://perm.aif.ru/static/1230/9b/2720185/3n6j2u.jpg" alt="Открытие памятника, гости" onerror="this.src='https://placehold.co/1200x800/2d2f48/e2b13b?text=Церемония+открытия'">
+                        <div class="slide-caption">🎭 Торжественное открытие, 8 июня 2018 года</div>
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="https://newdaynews.ru/upload/iblock/637/637976_800.jpg" alt="Деталь памятника" onerror="this.src='https://placehold.co/1200x800/2d2f48/e2b13b?text=Детали+лица+актёра'">
+                        <div class="slide-caption">✨ Выразительный образ, запечатлённый скульптором</div>
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="https://ic.pics.livejournal.com/ekaterina_b9/86242720/94222/94222_original.jpg" alt="Парк Гулливер и памятник" onerror="this.src='https://placehold.co/1200x800/2d2f48/e2b13b?text=Парк+ЖК+Гулливер'">
+                        <div class="slide-caption">🌳 Уютный парк около ЖК «Гулливер», центр Перми</div>
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="https://media.trin.citi.ru/357a4ceb-ac49-403b-ad50-bd2883ec4775/1200.jpg" alt="Поклонники у памятника" onerror="this.src='https://placehold.co/1200x800/2d2f48/e2b13b?text=Памятник+притягивает+людей'">
+                        <div class="slide-caption">❤️ Памятник стал точкой притяжения и памяти</div>
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="https://www.perm.kp.ru/daily/26834.5/3874626/038b155a-5a29-4e14-b09f-0a8f123e65ca.jpg" alt="Крупный план" onerror="this.src='https://placehold.co/1200x800/2d2f48/e2b13b?text=Образ+актера'">
+                        <div class="slide-caption">🎬 «Положись на меня, я никогда не пьянею» — Миша из «Иронии судьбы»</div>
+                    </div>
+                </div>
+                <div class="swiper-button-next"></div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Карта расположения памятника с ПРАВИЛЬНЫМИ координатами 58.000926, 56.244828 -->
+    <section class="section">
+        <div class="animate-on-scroll">
+            <span class="section-title">На карте Перми</span>
+            <div class="title-deco"></div>
+            <p>Памятник находится в парке жилого комплекса «Гулливер» по адресу: улица Революции, 48а. Точные координаты: 58.000926, 56.244828.</p>
+        </div>
+        <div class="map-wrapper animate-on-scroll">
+            <div id="monument-map"></div>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+            <i class="fas fa-bus"></i><span>Остановка «Революции, 48»: трамваи 4,7, автобус 14, 59</span>
+            <i class="fas fa-walking"></i><span>От центра города 5-10 минут пешком</span>
+        </div>
+    </section>
+</main>
+
+<footer class="footer">
+    <p><i class="fas fa-mask" style="color: #e59320;"></i> Народному артисту — народная память. Георгий Бурков (1933–1990) | Пермь — родина таланта</p>
+    <p style="margin-top: 0.5rem; font-size:0.8rem;">Единственный в России памятник актёру | Сквер ЖК «Гулливер»</p>
+    <p><small>Историко-культурный проект, посвящённый 90-летию со дня рождения Г.И. Буркова</small></p>
+</footer>
+
+<div class="go-top" id="goTopBtn">
+    <i class="fas fa-chevron-up"></i>
+</div>
+
+<!-- Библиотеки -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Анимация по скроллу
+    const animatedElements = document.querySelectorAll('.animate-on-scroll');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.2, rootMargin: "0px 0px -40px 0px" });
+    animatedElements.forEach(el => observer.observe(el));
+
+    // скролл до about
+    document.getElementById('scrollBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        const aboutSection = document.getElementById('about');
+        aboutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // кнопка наверх
+    const goTopBtn = document.getElementById('goTopBtn');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+            goTopBtn.classList.add('show');
+        } else {
+            goTopBtn.classList.remove('show');
+        }
+    });
+    goTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // инициализация Swiper
+    const swiper = new Swiper('.mySwiper', {
+        loop: true,
+        autoplay: {
+            delay: 4400,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+        },
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+            dynamicBullets: true,
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+        speed: 700,
+        spaceBetween: 0,
+        grabCursor: true,
+        effect: 'slide',
+    });
+
+    // --- Leaflet карта с обновлёнными координатами (58.000926, 56.244828) ---
+    const monumentLat = 58.000926;
+    const monumentLng = 56.244828;
+    
+    const map = L.map('monument-map').setView([monumentLat, monumentLng], 18); // увеличенный зум для точности
+    
+    // стиль карты (тёмный, атмосферный)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CartoDB',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        minZoom: 14,
+    }).addTo(map);
+    
+    // иконка — театральная маска
+    const customIcon = L.divIcon({
+        html: '<i class="fas fa-theater-masks" style="font-size: 32px; color: #dc8c1a; text-shadow: 0 0 6px black;"></i>',
+        iconSize: [36, 36],
+        popupAnchor: [0, -18],
+        className: 'burkov-marker'
+    });
+    
+    const marker = L.marker([monumentLat, monumentLng], { icon: customIcon }).addTo(map);
+    marker.bindPopup(`
+        <b style="color:#e59320;">🎭 Памятник Георгию Буркову</b><br>
+        <span style="color:#eeeeee;">📍 г. Пермь, ул. Революции, 48а (парк ЖК «Гулливер»)<br>
+        📌 Координаты: 58.000926, 56.244828<br>
+        ⏳ Открыт в 2018 году, единственный в России монумент актёру<br>
+        🌟 «Чудак из Перми» — навечно в бронзе</span>
+    `).openPopup();
+    
+    // декоративный круг
+    L.circle([monumentLat, monumentLng], {
+        color: '#dc8c1a',
+        weight: 1.5,
+        fillColor: '#e59320',
+        fillOpacity: 0.12,
+        radius: 40
+    }).addTo(map);
+    
+    map.scrollWheelZoom.enable();
+    
+    // коррекция размеров карты
+    const fixMapSize = () => { map.invalidateSize(); };
+    window.addEventListener('resize', () => { fixMapSize(); });
+    setTimeout(() => { fixMapSize(); }, 300);
+    
+    // подстановка заглушек для изображений
+    const allImages = document.querySelectorAll('.swiper-slide img');
+    allImages.forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = 'https://placehold.co/1200x800/2d2f48/e2b13b?text=Георгий+Бурков+Памятник';
+            this.alt = 'Монумент Георгию Буркову (демо)';
+        });
+    });
+</script>
+</body>
+</html>
